@@ -542,17 +542,49 @@ export default function SettingsPage() {
       return;
     }
 
-    setUploading(true);
     setMessage("");
     setError("");
 
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "image/svg+xml",
+    ];
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      setError(
+        "Invalid logo format. Please upload PNG, JPG, WEBP or SVG."
+      );
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setError(
+        "Logo is too large. Please choose an image smaller than 5MB."
+      );
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    setUploading(true);
+
     try {
       const formData = new FormData();
-
       formData.append("file", file);
 
-      const result =
-        await uploadWebsiteLogo(formData);
+      const result = await uploadWebsiteLogo(formData);
 
       setLogoUrl(result.logoUrl);
 
