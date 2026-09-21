@@ -6,11 +6,31 @@ type FestivalThemeProps = {
   theme?: string | null;
 };
 
+function normalizeTheme(theme?: string | null) {
+  if (!theme) {
+    return "default";
+  }
+
+  const normalized = theme
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/['’]/g, "")
+    .replace(/\s+/g, "-");
+
+  // Keep the CSS/database naming consistent.
+  if (normalized === "results") {
+    return "results-achievement";
+  }
+
+  return normalized;
+}
+
 export default function FestivalTheme({
   theme,
 }: FestivalThemeProps) {
   useEffect(() => {
-    const selectedTheme = theme || "default";
+    const selectedTheme = normalizeTheme(theme);
 
     document.documentElement.setAttribute(
       "data-festival-theme",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Globe,
   Mail,
@@ -356,7 +357,7 @@ const festivalThemes: FestivalTheme[] = [
   },
 
   {
-    id: "results",
+    id: "results-achievement",
     name: "Results & Achievement",
     emoji: "🏆",
     category: "Special Themes",
@@ -407,6 +408,7 @@ const categories: {
 
 export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -499,6 +501,22 @@ export default function SettingsPage() {
         festival_theme: festivalTheme,
       });
 
+      // Refresh the Server Components/root layout so the
+      // selected festival theme is applied across the entire website.
+      router.refresh();
+
+      // Also update the current document immediately without
+      // waiting for navigation.
+      document.documentElement.setAttribute(
+        "data-festival-theme",
+        festivalTheme || "default"
+      );
+
+      document.body.setAttribute(
+        "data-festival-theme",
+        festivalTheme || "default"
+      );
+
       setMessage(
         `${selectedTheme.emoji} ${selectedTheme.name} theme has been saved successfully.`
       );
@@ -533,10 +551,10 @@ export default function SettingsPage() {
 
       formData.append("file", file);
 
-      const url =
+      const result =
         await uploadWebsiteLogo(formData);
 
-      setLogoUrl(url);
+      setLogoUrl(result.logoUrl);
 
       setMessage(
         "Website logo uploaded successfully."
