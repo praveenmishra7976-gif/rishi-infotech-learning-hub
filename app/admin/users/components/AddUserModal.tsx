@@ -13,16 +13,24 @@ export default function AddUserModal() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("student");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+
+  function resetForm() {
+    setName("");
+    setEmail("");
+    setRole("student");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+  }
 
   function closeModal() {
     if (pending) return;
 
     setOpen(false);
-    setError("");
-    setName("");
-    setEmail("");
-    setRole("student");
+    resetForm();
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -41,6 +49,21 @@ export default function AddUserModal() {
       return;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must contain at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setError("");
 
     startTransition(async () => {
@@ -49,9 +72,11 @@ export default function AddUserModal() {
           full_name: cleanName,
           email: cleanEmail,
           role,
+          password,
         });
 
-        closeModal();
+        setOpen(false);
+        resetForm();
         router.refresh();
       } catch (err) {
         setError(
@@ -79,14 +104,14 @@ export default function AddUserModal() {
 
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl md:p-8">
+          <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl md:p-8">
             <div className="mb-6">
               <h2 className="text-3xl font-black text-slate-900">
                 Add User
               </h2>
 
-              <p className="mt-2 text-sm text-slate-500">
-                Add a profile to the user management system.
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Create a real login account and matching profile.
               </p>
             </div>
 
@@ -100,8 +125,9 @@ export default function AddUserModal() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full Name"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  autoComplete="name"
                   disabled={pending}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 />
               </div>
 
@@ -115,8 +141,9 @@ export default function AddUserModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  autoComplete="email"
                   disabled={pending}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 />
               </div>
 
@@ -128,8 +155,8 @@ export default function AddUserModal() {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   disabled={pending}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
@@ -138,8 +165,47 @@ export default function AddUserModal() {
                 </select>
               </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Initial Password
+                </label>
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  autoComplete="new-password"
+                  disabled={pending}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                />
+
+                <p className="mt-2 text-xs text-slate-400">
+                  Give this password securely to the new user.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Confirm Password
+                </label>
+
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Enter password again"
+                  autoComplete="new-password"
+                  disabled={pending}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                />
+              </div>
+
               {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-700"
+                >
                   {error}
                 </div>
               )}
