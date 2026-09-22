@@ -17,6 +17,7 @@ import {
   Shield,
   Layers,
   BookMarked,
+  Mail,
 } from "lucide-react";
 
 const menu = [
@@ -74,6 +75,11 @@ const menu = [
     name: "Analytics",
     href: "/admin/analytics",
     icon: BarChart3,
+  },
+  {
+    name: "Newsletter",
+    href: "/admin/newsletter",
+    icon: Mail,
   },
   {
     name: "Settings",
