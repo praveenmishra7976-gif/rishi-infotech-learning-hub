@@ -1,33 +1,59 @@
-import { supabase } from "@/app/lib/supabase";
+import { adminSupabase } from "./supabaseAdmin";
 
-export async function getAdminStats() {
-  const [
-    { count: students },
-    { count: courses },
-    { count: quizzes },
-    { count: payments },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true }),
+type CountResult = {
+  table: string;
+  count: number;
+};
 
-    supabase
-      .from("courses")
-      .select("*", { count: "exact", head: true }),
+async function getCount(table: string): Promise<CountResult> {
+  const { count, error } = await adminSupabase
+    .from(table)
+    .select("*", {
+      count: "exact",
+      head: true,
+    });
 
-    supabase
-      .from("quizzes")
-      .select("*", { count: "exact", head: true }),
+  if (error) {
+    console.error(
+      `Admin stats error for ${table}:`,
+      error
+    );
 
-    supabase
-      .from("payments")
-      .select("*", { count: "exact", head: true }),
-  ]);
+    return {
+      table,
+      count: 0,
+    };
+  }
 
   return {
-    students: students ?? 0,
-    courses: courses ?? 0,
-    quizzes: quizzes ?? 0,
-    payments: payments ?? 0,
+    table,
+    count: count ?? 0,
+  };
+}
+
+export async function getAdminStats() {
+  const results = await Promise.all([
+    getCount("users"),
+    getCount("subjects"),
+    getCount("notes"),
+    getCount("quizzes"),
+    getCount("videos"),
+    getCount("downloads"),
+  ]);
+
+  const stats = Object.fromEntries(
+    results.map((item) => [
+      item.table,
+      item.count,
+    ])
+  ) as Record<string, number>;
+
+  return {
+    users: stats.users ?? 0,
+    subjects: stats.subjects ?? 0,
+    notes: stats.notes ?? 0,
+    quizzes: stats.quizzes ?? 0,
+    videos: stats.videos ?? 0,
+    downloads: stats.downloads ?? 0,
   };
 }
