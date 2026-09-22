@@ -2162,3 +2162,108 @@ html[data-festival-theme="exam-season"] .festival-home .school-mission-highlight
   -webkit-text-fill-color: #475569 !important;
 }
 
+
+/* =========================================================
+   HOMEPAGE FESTIVAL THEME BRIDGE
+   Connects the redesigned homepage to the global
+   FestivalTheme CSS variables.
+========================================================= */
+
+html[data-festival-theme] .festival-home {
+  background: var(--festival-background) !important;
+  color: var(--festival-text) !important;
+}
+
+/* Main homepage surfaces */
+html[data-festival-theme] .festival-home .bg-white {
+  background-color: var(--festival-surface) !important;
+}
+
+html[data-festival-theme] .festival-home .bg-slate-50 {
+  background-color: var(--festival-surface-soft) !important;
+}
+
+/* Homepage borders */
+html[data-festival-theme] .festival-home .border-slate-100,
+html[data-festival-theme] .festival-home .border-slate-200,
+html[data-festival-theme] .festival-home .border-blue-100 {
+  border-color: var(--festival-border) !important;
+}
+
+/* Homepage text */
+html[data-festival-theme] .festival-home .text-slate-950,
+html[data-festival-theme] .festival-home .text-slate-900,
+html[data-festival-theme] .festival-home .text-slate-800 {
+  color: var(--festival-text) !important;
+}
+
+html[data-festival-theme] .festival-home .text-slate-700,
+html[data-festival-theme] .festival-home .text-slate-600,
+html[data-festival-theme] .festival-home .text-slate-500,
+html[data-festival-theme] .festival-home .text-slate-400 {
+  color: var(--festival-text-soft) !important;
+}
+
+/* Primary blue UI elements */
+html[data-festival-theme] .festival-home .bg-blue-700,
+html[data-festival-theme] .festival-home .bg-blue-800 {
+  background-color: var(--festival-primary) !important;
+}
+
+html[data-festival-theme] .festival-home .bg-blue-900 {
+  background-color: var(--festival-secondary) !important;
+}
+
+html[data-festival-theme] .festival-home .text-blue-700,
+html[data-festival-theme] .festival-home .text-blue-800,
+html[data-festival-theme] .festival-home .text-blue-900 {
+  color: var(--festival-primary) !important;
+}
+
+html[data-festival-theme] .festival-home .border-blue-200,
+html[data-festival-theme] .festival-home .border-blue-300 {
+  border-color: var(--festival-border) !important;
+}
+
+/* Blue soft panels */
+html[data-festival-theme] .festival-home .bg-blue-50,
+html[data-festival-theme] .festival-home .bg-blue-100 {
+  background-color: var(--festival-surface-soft) !important;
+}
+
+/* Festival-aware blue gradients */
+html[data-festival-theme] .festival-home [class*="from-blue-"] {
+  background-image: var(--festival-gradient) !important;
+}
+
+/* Theme-colored soft hover states */
+html[data-festival-theme] .festival-home .hover\:bg-blue-50:hover {
+  background-color: var(--festival-surface-soft) !important;
+}
+
+/* Theme-aware focus ring */
+html[data-festival-theme] .festival-home .ring-blue-500:focus {
+  --tw-ring-color: var(--festival-primary) !important;
+}
+
+/* Homepage decorative blue glow */
+html[data-festival-theme] .festival-home [class*="bg-blue-100/"] {
+  background-color: var(--festival-glow) !important;
+}
+
+/* Keep white text readable on primary/secondary panels */
+html[data-festival-theme] .festival-home .text-white {
+  color: #ffffff !important;
+}
+
+/* Newsletter stays a strong themed band */
+html[data-festival-theme] .festival-home > section.bg-blue-700 {
+  background: var(--festival-gradient) !important;
+}
+
+/* Footer keeps its professional dark contrast */
+html[data-festival-theme] .festival-home footer,
+html[data-festival-theme] .festival-home .bg-slate-950 {
+  background-color: var(--festival-secondary) !important;
+}
+

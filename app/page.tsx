@@ -407,8 +407,64 @@ export default function HomePage() {
     setShowResults(true);
   }
 
+
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+
+  const handleNewsletterSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    const email = newsletterEmail.trim().toLowerCase();
+
+    if (!email) {
+      setNewsletterStatus("error");
+      setNewsletterMessage("Please enter your email address.");
+      return;
+    }
+
+    setNewsletterStatus("loading");
+    setNewsletterMessage("");
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setNewsletterStatus("error");
+        setNewsletterMessage(
+          result.message || "Unable to subscribe right now."
+        );
+        return;
+      }
+
+      setNewsletterStatus("success");
+      setNewsletterMessage(
+        result.message || "You're subscribed! We'll keep you updated."
+      );
+      setNewsletterEmail("");
+    } catch (error) {
+      console.error("Newsletter submit error:", error);
+      setNewsletterStatus("error");
+      setNewsletterMessage(
+        "Something went wrong. Please try again."
+      );
+    }
+  };
+
   return (
-    <main className="overflow-hidden bg-white text-slate-900">
+    <main className="festival-home overflow-hidden bg-white text-slate-900">
       <FestivalAnnouncement />
 
       {/* ===================================================== */}
@@ -1428,17 +1484,13 @@ export default function HomePage() {
 
       {/* ===================================================== */}
       {/* NEWSLETTER */}
-      {/* ===================================================== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 py-16 text-white md:py-20">
-        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-orange-300/10 blur-3xl" />
+      <section className="bg-blue-700 px-6 py-16 text-white md:py-20">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-200">
+            Newsletter
+          </p>
 
-        <div className="relative mx-auto max-w-5xl px-6 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10">
-            <Mail size={34} />
-          </div>
-
-          <h2 className="mt-7 text-3xl font-black md:text-5xl">
+          <h2 className="mt-4 text-3xl font-black md:text-5xl">
             Stay Updated
           </h2>
 
@@ -1447,29 +1499,66 @@ export default function HomePage() {
             quiz updates and courses.
           </p>
 
-          <div className="mx-auto mt-8 flex max-w-2xl flex-col gap-3 rounded-2xl bg-white p-2 sm:flex-row">
+          <form
+            onSubmit={handleNewsletterSubmit}
+            className="mx-auto mt-8 flex max-w-2xl flex-col gap-2 rounded-2xl bg-white p-2 sm:flex-row"
+          >
+            <label htmlFor="newsletter-email" className="sr-only">
+              Email address
+            </label>
+
             <input
+              id="newsletter-email"
               type="email"
+              value={newsletterEmail}
+              onChange={(event) => {
+                setNewsletterEmail(event.target.value);
+                if (newsletterStatus !== "idle") {
+                  setNewsletterStatus("idle");
+                  setNewsletterMessage("");
+                }
+              }}
               placeholder="Enter your email address"
-              className="min-w-0 flex-1 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none"
+              autoComplete="email"
+              disabled={newsletterStatus === "loading"}
+              className="min-w-0 flex-1 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none ring-blue-500 focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
 
             <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-sm font-black text-white transition hover:bg-orange-600"
+              type="submit"
+              disabled={newsletterStatus === "loading"}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3.5 text-sm font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Subscribe
+              {newsletterStatus === "loading"
+                ? "Subscribing..."
+                : "Subscribe"}
               <ArrowRight size={17} />
             </button>
+          </form>
+
+          <div
+            aria-live="polite"
+            className="mx-auto mt-4 min-h-5 max-w-2xl text-sm font-bold"
+          >
+            {newsletterMessage && (
+              <span
+                className={
+                  newsletterStatus === "success"
+                    ? "text-green-200"
+                    : "text-orange-200"
+                }
+              >
+                {newsletterMessage}
+              </span>
+            )}
           </div>
 
-          <p className="mt-4 text-xs font-semibold text-blue-200">
+          <p className="mt-2 text-xs font-semibold text-blue-200">
             Useful updates. No unnecessary clutter.
           </p>
         </div>
       </section>
 
-      {/* ===================================================== */}
       {/* FOOTER */}
       {/* ===================================================== */}
       <footer className="bg-slate-950 text-slate-300">
