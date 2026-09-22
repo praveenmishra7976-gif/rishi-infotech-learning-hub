@@ -50,7 +50,7 @@ const searchItems: SearchItem[] = [
   { name: "Chemistry", href: "/learn/chemistry", type: "Subject" },
   { name: "Mathematics", href: "/learn/mathematics", type: "Subject" },
   { name: "Sanskrit", href: "/learn/sanskrit", type: "Subject" },
-  { name: "AI Hub", href: "/dictionary", type: "Technology" },
+  { name: "AI Translator", href: "/dictionary/ai-translator", type: "Technology" },
   { name: "Developer Hub", href: "/developer-hub", type: "Technology" },
   { name: "Practice", href: "/practice", type: "Practice" },
   { name: "Notes", href: "/learn", type: "Study" },
@@ -67,7 +67,7 @@ const popularSearches = [
   { name: "Chemistry", href: "/learn/chemistry", icon: FlaskConical },
   { name: "Mathematics", href: "/learn/mathematics", icon: Calculator },
   { name: "Practice", href: "/practice", icon: Trophy },
-  { name: "AI Hub", href: "/dictionary", icon: Bot },
+  { name: "AI Translator", href: "/dictionary/ai-translator", icon: Bot },
   { name: "Bhagavad Gita", href: "/books/bhagavad-gita", icon: Sparkles },
   { name: "Ramayan", href: "/books/ramayan", icon: Heart },
 ];
@@ -100,7 +100,7 @@ const categories = [
     title: "AI Tools",
     description:
       "Explore useful AI-powered learning and productivity resources.",
-    href: "/dictionary",
+    href: "/dictionary/ai-translator",
     icon: Bot,
     label: "AI & TECHNOLOGY",
     accent: "orange",
@@ -188,10 +188,10 @@ const updates = [
     tag: "PRACTICE",
   },
   {
-    title: "AI Hub",
+    title: "AI Translator",
     description:
       "Discover AI resources and practical technology tools.",
-    href: "/dictionary",
+    href: "/dictionary/ai-translator",
     icon: Bot,
     tag: "TECHNOLOGY",
   },
@@ -1562,10 +1562,10 @@ export default function HomePage() {
                   Daily Challenge
                 </Link>
                 <Link
-                  href="/dictionary"
+                  href="/dictionary/ai-translator"
                   className="block hover:text-white"
                 >
-                  AI Hub
+                  AI Translator
                 </Link>
                 <Link
                   href="/developer-hub"
