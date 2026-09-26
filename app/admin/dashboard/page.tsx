@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import {
   Users,
+  UserCheck,
+  GraduationCap,
+  ShieldCheck,
   BookOpen,
   FileQuestion,
   Video,
@@ -27,26 +30,58 @@ export default async function DashboardPage() {
   const { data: profile, error: profileError } =
     await adminSupabase
       .from("profiles")
-      .select("role")
+      .select("role,status")
       .eq("id", user.id)
       .single();
 
   if (
     profileError ||
-    profile?.role !== "admin"
+    !profile ||
+    !["admin", "super_admin"].includes(
+      String(profile.role || "").toLowerCase()
+    )
   ) {
     redirect("/unauthorized");
   }
 
+  if (
+    ["suspended", "blocked"].includes(
+      String(profile.status || "active").toLowerCase()
+    )
+  ) {
+    redirect("/admin/login");
+  }
+
   const stats = await getAdminStats();
 
-  const cards = [
+  const userCards = [
     {
-      title: "Users",
+      title: "Total Users",
       value: stats.users,
       icon: <Users size={34} />,
       color: "bg-blue-600",
     },
+    {
+      title: "Students",
+      value: stats.students,
+      icon: <GraduationCap size={34} />,
+      color: "bg-purple-600",
+    },
+    {
+      title: "Teachers",
+      value: stats.teachers,
+      icon: <UserCheck size={34} />,
+      color: "bg-green-600",
+    },
+    {
+      title: "Administrators",
+      value: stats.administrators,
+      icon: <ShieldCheck size={34} />,
+      color: "bg-orange-500",
+    },
+  ];
+
+  const resourceCards = [
     {
       title: "Subjects",
       value: stats.subjects,
@@ -114,29 +149,77 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* STAT CARDS */}
-      <div className="grid gap-8 lg:grid-cols-3 md:grid-cols-2">
-        {cards.map((card) => (
-          <div
-            key={card.title}
-            className="rounded-3xl bg-white p-8 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
-          >
+      {/* USER STATISTICS */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-black text-slate-900">
+            User Statistics
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Live counts from the profiles table.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {userCards.map((card) => (
             <div
-              className={`${card.color} flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-sm`}
+              key={card.title}
+              className="rounded-3xl bg-white p-7 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
             >
-              {card.icon}
+              <div
+                className={`${card.color} flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-sm`}
+              >
+                {card.icon}
+              </div>
+
+              <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-gray-500">
+                {card.title}
+              </h3>
+
+              <p className="mt-2 text-4xl font-black text-slate-900">
+                {card.value.toLocaleString("en-IN")}
+              </p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-gray-500">
-              {card.title}
-            </h2>
+      {/* RESOURCE STATISTICS */}
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-black text-slate-900">
+            Learning Resources
+          </h2>
 
-            <p className="mt-2 text-4xl font-black text-slate-900">
-              {card.value.toLocaleString("en-IN")}
-            </p>
-          </div>
-        ))}
-      </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Current content counts.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+          {resourceCards.map((card) => (
+            <div
+              key={card.title}
+              className="rounded-3xl bg-white p-7 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div
+                className={`${card.color} flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-sm`}
+              >
+                {card.icon}
+              </div>
+
+              <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-gray-500">
+                {card.title}
+              </h3>
+
+              <p className="mt-2 text-3xl font-black text-slate-900">
+                {card.value.toLocaleString("en-IN")}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* OVERVIEW */}
       <div className="grid gap-8 lg:grid-cols-2">
@@ -152,12 +235,22 @@ export default async function DashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm font-semibold text-slate-400">
-                Current content counts
+                Current platform totals
               </p>
             </div>
           </div>
 
           <div className="mt-8 space-y-5">
+            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4">
+              <span className="font-bold text-slate-600">
+                Total registered users
+              </span>
+
+              <span className="text-xl font-black text-blue-700">
+                {stats.users.toLocaleString("en-IN")}
+              </span>
+            </div>
+
             <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4">
               <span className="font-bold text-slate-600">
                 Total learning resources
@@ -170,24 +263,24 @@ export default async function DashboardPage() {
 
             <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4">
               <span className="font-bold text-slate-600">
-                Notes + quizzes
+                Students + teachers
               </span>
 
-              <span className="text-xl font-black text-green-600">
+              <span className="text-xl font-black text-purple-600">
                 {(
-                  stats.notes + stats.quizzes
+                  stats.students + stats.teachers
                 ).toLocaleString("en-IN")}
               </span>
             </div>
 
             <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4">
               <span className="font-bold text-slate-600">
-                Videos + downloads
+                Notes + quizzes
               </span>
 
-              <span className="text-xl font-black text-cyan-600">
+              <span className="text-xl font-black text-green-600">
                 {(
-                  stats.videos + stats.downloads
+                  stats.notes + stats.quizzes
                 ).toLocaleString("en-IN")}
               </span>
             </div>

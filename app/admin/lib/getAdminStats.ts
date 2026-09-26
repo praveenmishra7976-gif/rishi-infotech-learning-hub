@@ -31,10 +31,45 @@ async function getCount(table: string): Promise<CountResult> {
   };
 }
 
+async function getRoleCount(
+  roles: string[]
+): Promise<number> {
+  const { count, error } = await adminSupabase
+    .from("profiles")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .in("role", roles);
+
+  if (error) {
+    console.error(
+      `Admin role stats error for ${roles.join(", ")}:`,
+      error
+    );
+
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
 export async function getAdminStats() {
-  const results = await Promise.all([
-    // User accounts are stored in profiles in this project.
+  const [
+    users,
+    students,
+    teachers,
+    administrators,
+    subjects,
+    notes,
+    quizzes,
+    videos,
+    downloads,
+  ] = await Promise.all([
     getCount("profiles"),
+    getRoleCount(["student"]),
+    getRoleCount(["teacher"]),
+    getRoleCount(["admin", "super_admin"]),
     getCount("subjects"),
     getCount("notes"),
     getCount("quizzes"),
@@ -42,19 +77,15 @@ export async function getAdminStats() {
     getCount("downloads"),
   ]);
 
-  const stats = Object.fromEntries(
-    results.map((item) => [
-      item.table,
-      item.count,
-    ])
-  ) as Record<string, number>;
-
   return {
-    users: stats.profiles ?? 0,
-    subjects: stats.subjects ?? 0,
-    notes: stats.notes ?? 0,
-    quizzes: stats.quizzes ?? 0,
-    videos: stats.videos ?? 0,
-    downloads: stats.downloads ?? 0,
+    users: users.count,
+    students,
+    teachers,
+    administrators,
+    subjects: subjects.count,
+    notes: notes.count,
+    quizzes: quizzes.count,
+    videos: videos.count,
+    downloads: downloads.count,
   };
 }
