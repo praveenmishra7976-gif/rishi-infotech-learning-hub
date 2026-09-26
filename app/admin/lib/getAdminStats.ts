@@ -33,7 +33,8 @@ async function getCount(table: string): Promise<CountResult> {
 
 export async function getAdminStats() {
   const results = await Promise.all([
-    getCount("users"),
+    // User accounts are stored in profiles in this project.
+    getCount("profiles"),
     getCount("subjects"),
     getCount("notes"),
     getCount("quizzes"),
@@ -49,7 +50,7 @@ export async function getAdminStats() {
   ) as Record<string, number>;
 
   return {
-    users: stats.users ?? 0,
+    users: stats.profiles ?? 0,
     subjects: stats.subjects ?? 0,
     notes: stats.notes ?? 0,
     quizzes: stats.quizzes ?? 0,
