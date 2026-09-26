@@ -26,7 +26,6 @@ export async function createUser({
 }: CreateUserProps) {
   const supabase = await createClient();
 
-  // Verify the person performing this action is logged in.
   const {
     data: { user: currentUser },
     error: currentUserError,
@@ -36,7 +35,6 @@ export async function createUser({
     throw new Error("You must be logged in as an administrator.");
   }
 
-  // Verify the current account has an administrator role.
   const { data: currentProfile, error: profileLookupError } =
     await adminSupabase
       .from("profiles")
@@ -82,7 +80,7 @@ export async function createUser({
 
   /*
    * Create the real Supabase Auth account.
-   * email_confirm=true allows the new user to sign in immediately.
+   * The email belongs to auth.users, not profiles.
    */
   const { data: authData, error: authError } =
     await adminSupabase.auth.admin.createUser({
@@ -104,9 +102,8 @@ export async function createUser({
   }
 
   /*
-   * Create/update the matching profile.
-   * Using upsert also works when a database trigger has already created
-   * the profile row from auth.users.
+   * profiles contains the user's application information.
+   * IMPORTANT: profiles.email does not exist in this project.
    */
   const { error: profileError } = await adminSupabase
     .from("profiles")
@@ -114,8 +111,8 @@ export async function createUser({
       {
         id: authData.user.id,
         full_name: cleanName,
-        email: cleanEmail,
         role: cleanRole,
+        status: "active",
       },
       {
         onConflict: "id",
@@ -123,7 +120,6 @@ export async function createUser({
     );
 
   if (profileError) {
-    // Prevent an orphaned Auth account if profile creation fails.
     const { error: rollbackError } =
       await adminSupabase.auth.admin.deleteUser(authData.user.id);
 
@@ -144,5 +140,6 @@ export async function createUser({
   return {
     success: true,
     userId: authData.user.id,
+    email: cleanEmail,
   };
 }
