@@ -39,7 +39,58 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Protect all admin pages except the login page.
+  /*
+   * Check account status for authenticated users.
+   *
+   * Admin login is excluded from the redirect-to-dashboard rule below,
+   * because a non-admin user may already be logged in and need to switch
+   * to an administrator account.
+   */
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status, role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const status = String(profile?.status || "active").toLowerCase();
+
+    if (
+      (status === "suspended" || status === "blocked") &&
+      pathname !== "/admin/login"
+    ) {
+      await supabase.auth.signOut();
+
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("status", status);
+
+      return NextResponse.redirect(loginUrl);
+    }
+
+    /*
+     * Only an already-authenticated administrator should be redirected
+     * away from the Admin Login page.
+     */
+    if (pathname === "/admin/login") {
+      const role = String(profile?.role || "").toLowerCase();
+
+      if (role === "admin" || role === "super_admin") {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = "/admin/dashboard";
+
+        return NextResponse.redirect(dashboardUrl);
+      }
+
+      // Student/teacher/other users can remain on Admin Login
+      // and sign in with a separate administrator account.
+      return response;
+    }
+  }
+
+  /*
+   * Protect all admin pages except the login page.
+   */
   if (
     pathname.startsWith("/admin") &&
     pathname !== "/admin/login" &&
@@ -51,14 +102,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If already logged in, don't allow going back to admin login.
-  if (pathname === "/admin/login" && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/admin/dashboard";
-
-    return NextResponse.redirect(dashboardUrl);
-  }
-
   return response;
 }
 
@@ -66,5 +109,12 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/auth/profile",
+    "/dashboard/:path*",
+    "/student-dashboard/:path*",
+    "/profile",
+    "/courses/:path*",
+    "/course/:path*",
+    "/learn/:path*",
+    "/practice/:path*",
   ],
 };

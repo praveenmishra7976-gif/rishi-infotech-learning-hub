@@ -1,42 +1,114 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const status = searchParams.get("status");
+
+    if (status === "suspended") {
+      setMessage(
+        "Your account is suspended. Please contact the administrator."
+      );
+    } else if (status === "blocked") {
+      setMessage(
+        "Your account has been blocked. Please contact the administrator."
+      );
+    }
+  }, [searchParams]);
 
   async function login() {
+    setMessage("");
+
     if (!email.trim() || !password) {
-      alert("Please enter email and password.");
+      setMessage("Please enter email and password.");
       return;
     }
 
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
       const { data, error } =
         await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: cleanEmail,
           password,
         });
 
       if (error) {
         console.error("Login error:", error);
-        alert(error.message);
+        setMessage(error.message);
         return;
       }
 
-      console.log("Login Success:", data);
+      if (!data.user) {
+        setMessage("Unable to sign in. Please try again.");
+        return;
+      }
 
       /*
-       * Confirm that Supabase has the session.
+       * Check the user's account status immediately after authentication.
+       */
+      const { data: profile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("status")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+      if (profileError) {
+        console.error(
+          "Profile status lookup error:",
+          profileError
+        );
+
+        await supabase.auth.signOut();
+
+        setMessage(
+          "Your account could not be verified. Please contact the administrator."
+        );
+
+        return;
+      }
+
+      const status = String(
+        profile?.status || "active"
+      ).toLowerCase();
+
+      if (status === "suspended") {
+        await supabase.auth.signOut();
+
+        setMessage(
+          "Your account is suspended. Please contact the administrator."
+        );
+
+        return;
+      }
+
+      if (status === "blocked") {
+        await supabase.auth.signOut();
+
+        setMessage(
+          "Your account has been blocked. Please contact the administrator."
+        );
+
+        return;
+      }
+
+      /*
+       * Confirm that Supabase has a session.
        */
       const {
         data: { session },
@@ -51,24 +123,18 @@ export default function LoginPage() {
       }
 
       if (!session) {
-        alert(
+        setMessage(
           "Login succeeded, but the session could not be established. Please try again."
         );
         return;
       }
 
-      console.log("Session established:", session.user.id);
-
-      /*
-       * Login successful.
-       * Send the user to the HOME page.
-       */
       router.replace("/");
       router.refresh();
     } catch (error) {
       console.error("Unexpected login error:", error);
 
-      alert(
+      setMessage(
         error instanceof Error
           ? error.message
           : "Unexpected error occurred."
@@ -87,20 +153,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8">
-
-        {/* TITLE */}
-
-        <h1 className="text-4xl font-bold text-center text-blue-700">
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+        <h1 className="text-center text-4xl font-bold text-blue-700">
           Login
         </h1>
 
-        <p className="text-center text-gray-500 mt-2">
+        <p className="mt-2 text-center text-gray-500">
           Welcome Back
         </p>
-
-        {/* EMAIL */}
 
         <input
           type="email"
@@ -112,10 +173,8 @@ export default function LoginPage() {
           }
           onKeyDown={handleKeyDown}
           disabled={loading}
-          className="w-full mt-8 border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-gray-100"
+          className="mt-8 w-full rounded-xl border p-3 outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-gray-100"
         />
-
-        {/* PASSWORD */}
 
         <input
           type="password"
@@ -127,21 +186,26 @@ export default function LoginPage() {
           }
           onKeyDown={handleKeyDown}
           disabled={loading}
-          className="w-full mt-5 border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-gray-100"
+          className="mt-5 w-full rounded-xl border p-3 outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-gray-100"
         />
 
-        {/* LOGIN BUTTON */}
+        {message && (
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700"
+          >
+            {message}
+          </div>
+        )}
 
         <button
           type="button"
           onClick={login}
           disabled={loading}
-          className="w-full mt-8 bg-blue-700 hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl py-3 font-bold transition"
+          className="mt-8 w-full rounded-xl bg-blue-700 py-3 font-bold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Signing In..." : "Login"}
         </button>
-
-        {/* FORGOT PASSWORD */}
 
         <div className="mt-6 text-center">
           <Link
@@ -152,19 +216,16 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {/* REGISTER */}
-
-        <p className="text-center mt-6 text-gray-600">
+        <p className="mt-6 text-center text-gray-600">
           Don't have an account?
         </p>
 
         <Link
           href="/register"
-          className="block text-center mt-2 text-blue-700 font-bold hover:underline"
+          className="mt-2 block text-center font-bold text-blue-700 hover:underline"
         >
           Create Account
         </Link>
-
       </div>
     </main>
   );
