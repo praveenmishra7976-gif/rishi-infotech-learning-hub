@@ -18,128 +18,208 @@ const ALLOWED_ROLES = [
   "super_admin",
 ] as const;
 
+interface CreateUserResult {
+  success: boolean;
+  userId?: string;
+  email?: string;
+  error?: string;
+}
+
 export async function createUser({
   full_name,
   email,
   role,
   password,
-}: CreateUserProps) {
-  const supabase = await createClient();
+}: CreateUserProps): Promise<CreateUserResult> {
+  try {
+    const supabase = await createClient();
 
-  const {
-    data: { user: currentUser },
-    error: currentUserError,
-  } = await supabase.auth.getUser();
+    const {
+      data: { user: currentUser },
+      error: currentUserError,
+    } = await supabase.auth.getUser();
 
-  if (currentUserError || !currentUser) {
-    throw new Error("You must be logged in as an administrator.");
-  }
-
-  const { data: currentProfile, error: profileLookupError } =
-    await adminSupabase
-      .from("profiles")
-      .select("role")
-      .eq("id", currentUser.id)
-      .maybeSingle();
-
-  if (profileLookupError) {
-    throw new Error(
-      `Unable to verify administrator access: ${profileLookupError.message}`
-    );
-  }
-
-  const currentRole = String(currentProfile?.role || "").toLowerCase();
-
-  if (currentRole !== "admin" && currentRole !== "super_admin") {
-    throw new Error("Administrator permission is required.");
-  }
-
-  const cleanName = full_name.trim();
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanRole = role.trim().toLowerCase();
-
-  if (!cleanName) {
-    throw new Error("Full name is required.");
-  }
-
-  if (!cleanEmail) {
-    throw new Error("Email is required.");
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    throw new Error("Please enter a valid email address.");
-  }
-
-  if (!ALLOWED_ROLES.includes(cleanRole as (typeof ALLOWED_ROLES)[number])) {
-    throw new Error("Invalid user role.");
-  }
-
-  if (password.length < 6) {
-    throw new Error("Password must contain at least 6 characters.");
-  }
-
-  /*
-   * Create the real Supabase Auth account.
-   * The email belongs to auth.users, not profiles.
-   */
-  const { data: authData, error: authError } =
-    await adminSupabase.auth.admin.createUser({
-      email: cleanEmail,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: cleanName,
-        role: cleanRole,
-      },
-    });
-
-  if (authError) {
-    throw new Error(`Unable to create Auth account: ${authError.message}`);
-  }
-
-  if (!authData.user) {
-    throw new Error("Supabase did not return the new Auth user.");
-  }
-
-  /*
-   * profiles contains the user's application information.
-   * IMPORTANT: profiles.email does not exist in this project.
-   */
-  const { error: profileError } = await adminSupabase
-    .from("profiles")
-    .upsert(
-      {
-        id: authData.user.id,
-        full_name: cleanName,
-        role: cleanRole,
-        status: "active",
-      },
-      {
-        onConflict: "id",
-      }
-    );
-
-  if (profileError) {
-    const { error: rollbackError } =
-      await adminSupabase.auth.admin.deleteUser(authData.user.id);
-
-    if (rollbackError) {
-      console.error(
-        "Failed to roll back Auth user after profile error:",
-        rollbackError
-      );
+    if (currentUserError || !currentUser) {
+      return {
+        success: false,
+        error: "You must be logged in as an administrator.",
+      };
     }
 
-    throw new Error(
-      `Auth account was created, but the profile could not be saved: ${profileError.message}`
+    const { data: currentProfile, error: profileLookupError } =
+      await adminSupabase
+        .from("profiles")
+        .select("role")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+    if (profileLookupError) {
+      console.error(
+        "Create user admin profile lookup failed:",
+        profileLookupError
+      );
+
+      return {
+        success: false,
+        error: `Unable to verify administrator access: ${profileLookupError.message}`,
+      };
+    }
+
+    const currentRole = String(
+      currentProfile?.role || ""
+    ).toLowerCase();
+
+    if (
+      currentRole !== "admin" &&
+      currentRole !== "super_admin"
+    ) {
+      return {
+        success: false,
+        error: "Administrator permission is required.",
+      };
+    }
+
+    const cleanName = full_name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanRole = role.trim().toLowerCase();
+
+    if (!cleanName) {
+      return {
+        success: false,
+        error: "Full name is required.",
+      };
+    }
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        error: "Email is required.",
+      };
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        cleanEmail
+      )
+    ) {
+      return {
+        success: false,
+        error: "Please enter a valid email address.",
+      };
+    }
+
+    if (
+      !ALLOWED_ROLES.includes(
+        cleanRole as (typeof ALLOWED_ROLES)[number]
+      )
+    ) {
+      return {
+        success: false,
+        error: "Invalid user role.",
+      };
+    }
+
+    if (password.length < 6) {
+      return {
+        success: false,
+        error: "Password must contain at least 6 characters.",
+      };
+    }
+
+    const { data: authData, error: authError } =
+      await adminSupabase.auth.admin.createUser({
+        email: cleanEmail,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: cleanName,
+          role: cleanRole,
+        },
+      });
+
+    if (authError) {
+      console.error(
+        "Create user Auth error:",
+        authError
+      );
+
+      return {
+        success: false,
+        error: `Unable to create Auth account: ${authError.message}`,
+      };
+    }
+
+    if (!authData.user) {
+      return {
+        success: false,
+        error: "Supabase did not return the new Auth user.",
+      };
+    }
+
+    const newUserId = authData.user.id;
+
+    /*
+     * profiles does NOT contain an email column in this project.
+     */
+    const { error: profileError } =
+      await adminSupabase
+        .from("profiles")
+        .upsert(
+          {
+            id: newUserId,
+            full_name: cleanName,
+            role: cleanRole,
+            status: "active",
+          },
+          {
+            onConflict: "id",
+          }
+        );
+
+    if (profileError) {
+      console.error(
+        "Create user profile error:",
+        profileError
+      );
+
+      const { error: rollbackError } =
+        await adminSupabase.auth.admin.deleteUser(
+          newUserId
+        );
+
+      if (rollbackError) {
+        console.error(
+          "Auth rollback failed:",
+          rollbackError
+        );
+      }
+
+      return {
+        success: false,
+        error: `Auth account was created, but the profile could not be saved: ${profileError.message}`,
+      };
+    }
+
+    revalidatePath("/admin/users");
+    revalidatePath("/admin/dashboard");
+
+    return {
+      success: true,
+      userId: newUserId,
+      email: cleanEmail,
+    };
+  } catch (error) {
+    console.error(
+      "Unexpected create user error:",
+      error
     );
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unexpected error while creating the user.",
+    };
   }
-
-  revalidatePath("/admin/users");
-
-  return {
-    success: true,
-    userId: authData.user.id,
-    email: cleanEmail,
-  };
 }

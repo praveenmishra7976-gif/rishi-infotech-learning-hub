@@ -49,13 +49,19 @@ export default function AddUserModal() {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        cleanEmail
+      )
+    ) {
       setError("Please enter a valid email address.");
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must contain at least 6 characters.");
+      setError(
+        "Password must contain at least 6 characters."
+      );
       return;
     }
 
@@ -67,24 +73,25 @@ export default function AddUserModal() {
     setError("");
 
     startTransition(async () => {
-      try {
-        await createUser({
-          full_name: cleanName,
-          email: cleanEmail,
-          role,
-          password,
-        });
+      const result = await createUser({
+        full_name: cleanName,
+        email: cleanEmail,
+        role,
+        password,
+      });
 
-        setOpen(false);
-        resetForm();
-        router.refresh();
-      } catch (err) {
+      if (!result.success) {
         setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to create the user."
+          result.error ||
+            "Unable to create the user."
         );
+        return;
       }
+
+      setOpen(false);
+      resetForm();
+
+      router.refresh();
     });
   }
 
@@ -98,7 +105,10 @@ export default function AddUserModal() {
         }}
         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
       >
-        <span className="text-xl leading-none">+</span>
+        <span className="text-xl leading-none">
+          +
+        </span>
+
         Add User
       </button>
 
@@ -111,11 +121,15 @@ export default function AddUserModal() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Create a real login account and matching profile.
+                Create a real login account and matching
+                profile.
               </p>
             </div>
 
-            <form onSubmit={submit} className="space-y-5">
+            <form
+              onSubmit={submit}
+              className="space-y-5"
+            >
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Full Name
@@ -123,7 +137,9 @@ export default function AddUserModal() {
 
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) =>
+                    setName(e.target.value)
+                  }
                   placeholder="Full Name"
                   autoComplete="name"
                   disabled={pending}
@@ -139,7 +155,9 @@ export default function AddUserModal() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
                   placeholder="name@example.com"
                   autoComplete="email"
                   disabled={pending}
@@ -154,14 +172,27 @@ export default function AddUserModal() {
 
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  onChange={(e) =>
+                    setRole(e.target.value)
+                  }
                   disabled={pending}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 >
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
+                  <option value="student">
+                    Student
+                  </option>
+
+                  <option value="teacher">
+                    Teacher
+                  </option>
+
+                  <option value="admin">
+                    Admin
+                  </option>
+
+                  <option value="super_admin">
+                    Super Admin
+                  </option>
                 </select>
               </div>
 
@@ -173,7 +204,9 @@ export default function AddUserModal() {
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
                   placeholder="Minimum 6 characters"
                   autoComplete="new-password"
                   disabled={pending}
@@ -181,7 +214,8 @@ export default function AddUserModal() {
                 />
 
                 <p className="mt-2 text-xs text-slate-400">
-                  Give this password securely to the new user.
+                  Give this password securely to the
+                  new user.
                 </p>
               </div>
 
@@ -193,7 +227,9 @@ export default function AddUserModal() {
                 <input
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
+                  }
                   placeholder="Enter password again"
                   autoComplete="new-password"
                   disabled={pending}
@@ -225,7 +261,9 @@ export default function AddUserModal() {
                   disabled={pending}
                   className="rounded-2xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {pending ? "Creating..." : "Create User"}
+                  {pending
+                    ? "Creating..."
+                    : "Create User"}
                 </button>
               </div>
             </form>
